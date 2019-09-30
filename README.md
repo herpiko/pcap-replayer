@@ -27,6 +27,8 @@ Finally, replay them all,
 
 You may need to change the `baseURL` value to your dev/staging hostname.
 
+Supported methods: `GET`, `POST`, `PUT`, `DELETE`
+
 ## License
 
 MIT
