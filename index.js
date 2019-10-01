@@ -7,7 +7,7 @@ const directoryPath = path.join(__dirname, process.argv[2]);
 const https = require("https");
 
 const supportedMethods = ["POST", "GET", "PUT", "DELETE"];
-const baseURL = "https://localhost";
+const baseURL = "http://localhost:8000";
 const instance = axios.create({
   httpsAgent: new https.Agent({
     rejectUnauthorized: false
@@ -21,35 +21,29 @@ const replay = requests => {
     (req, cb) => {
       let msg = count + ". " + req.method.toUpperCase() + " " + req.url;
       count++;
-      // Ignore ws
-      if (req.url.startsWith(baseURL + "/ws?")) {
-        cb();
-        return;
-      }
-      // Ignore gerbang-organization
-      if (req.url.endsWith("gerbang-organizations")) {
-        cb();
-        return;
-      }
-      try {
+      setTimeout(() => {
         instance(req)
           .then(res => {
-            console.log(msg + " OK");
+            console.log((new Date()) + ' ' + msg + " OK");
           })
           .catch(err => {
+            if (!err.response) {
+              process.exit(1);
+            }
             if (err.response && err.response.status) {
-              console.log(msg + " NOT-OK " + err.response.status);
+              console.log((new Date()) + ' ' + msg + " NOT-OK " + err.response.status);
             } else {
-              console.log(msg + " NOT-OK ");
+              console.log((new Date()) + ' ' + msg + " NOT-OK ");
               console.log(err);
+            }
+            if (err.response.status === 500) {
+              process.exit(1);
             }
           })
           .finally(() => {
             cb();
           });
-      } catch (err) {
-        console.log(err);
-      }
+      }, 0);
     },
     err => {
       console.log("Replay done");
@@ -71,7 +65,7 @@ fs.readdir(directoryPath, function(err, files) {
       }
       let req = { url: baseURL, headers: {} };
       let rl = readline.createInterface({
-        input: fs.createReadStream(file)
+        input: fs.createReadStream(directoryPath + '/' + file)
       });
 
       let line_no = 0;
@@ -161,7 +155,7 @@ fs.readdir(directoryPath, function(err, files) {
       });
     },
     err => {
-      if (request.length < 1) {
+      if (requests.length < 1) {
         console.log('No request available.');
         process.exit(1);
       }
